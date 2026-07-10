@@ -1,0 +1,265 @@
+# KeyAuth-Style Licensing Panel — Detailed Project Specification
+
+> Ye document aapke diye gaye requirements ko organize karke ek clean, developer-ready prompt/spec me convert karta hai. Isse aap directly Claude Code, ChatGPT, ya kisi bhi developer ko de sakte hain taaki wo poora system bana sake.
+
+---
+
+## 1. Project Overview
+
+Ek **multi-role licensing/authentication panel** banana hai (jaisa KeyAuth ka hota hai — reference: `terminalx999.com`) jisme 3 tarah ke access levels honge:
+
+- **Owner** — sabse powerful, poore system ka full control
+- **Admin** — Owner jitna powerful, almost same permissions
+- **Reseller** — limited access, sirf apne credits/packages ke hisaab se keys generate kar sakta hai
+
+System ka use software licensing (keys generate karna, HWID lock karna, expiry set karna) ke liye hoga, saath me Discord bot integration bhi hoga jisse resellers apna khud ka bot bana kar keys generate kar sakein.
+
+### 1.1 UI/UX Design Philosophy — Minimalism
+
+Poore website (Landing Page + Dashboard, dono) ka design **minimalist** hona chahiye:
+
+- **Clean layout** — bohot zyada elements/clutter avoid karna, sirf zaroori cheez screen par dikhe
+- **Generous whitespace/spacing** — elements ke beech breathing room ho, cramped na lage
+- **Limited color palette** — 1 background color (dark ya light — jo bhi choose karein) + 1 primary accent color (e.g. sirf ek subtle accent — green/blue) + neutral grays. Bohot saare bright/neon colors ek saath avoid karna
+- **Simple typography** — ek clean sans-serif font (e.g. Inter, Geist, Manrope) — max 2 font weights use karna (regular + semi-bold/bold), bade decorative fonts avoid karna
+- **Flat design** — heavy gradients, glow effects, drop shadows minimal rakhna; agar shadow chahiye to subtle/soft rakhna
+- **Icons simple/outline style** — filled/3D icons avoid karna, thin-line icons use karna (e.g. Lucide icons)
+- **Cards/borders subtle** — light border ya very soft background contrast se sections separate karna, heavy boxes/borders avoid karna
+- **Micro-interactions minimal but smooth** — hover/transition effects simple aur subtle hone chahiye, flashy animations nahi
+
+> Note: Pehle jo landing page ka "neon/cyberpunk glow" theme discuss hua tha, usko ab **minimalist version** me convert karna hai — structure (hero, features, how-it-works, footer) same rahega, lekin visual style clean/minimal hoga, heavy neon-glow effects ki jagah subtle accent color aur bohot saara whitespace use hoga.
+
+---
+
+## 2. Authentication System
+
+### 2.1 Do Alag Login Systems
+- **Owner/Admin Login** — alag login page/flow
+- **Reseller Login** — alag login page/flow
+
+### 2.2 Owner Account Creation
+- Owner ka account **source code se hi create hota hai** (seed script / `.env` config / initial setup script) — koi public signup nahi.
+- Owner login ke baad hi **Admin accounts** create kar sakta hai.
+
+### 2.3 Login Fields
+- **Owner/Admin:** Username/Identity + Password + **Security PIN**
+- **Reseller:** Username + Password
+
+### 2.4 Two-Factor Authentication (2FA / Authenticator)
+- Har role (Owner, Admin, Reseller) ke liye optional/mandatory **TOTP-based Authenticator** support (Google Authenticator / Authy compatible).
+- Jab koi user **first time login** kare, system usse authenticator app se QR code scan karke connect karne ko bole.
+- Ek baar connect hone ke baad, **har login attempt par authenticator code mandatory** hoga.
+
+---
+
+## 3. Roles & Permissions
+
+### 3.1 Owner (Highest Access)
+- Sab kuch jo Admin kar sakta hai + extra:
+  - Sabhi **Resellers ko search** kar sakta hai (by name/username)
+  - **Admin accounts create** kar sakta hai
+  - Kisi bhi Reseller ko **infinite credits** de sakta hai (Reseller khud ko infinite nahi de sakta)
+  - Full system-wide visibility (sab resellers, sab keys, sab logs)
+
+### 3.2 Admin
+- Owner jaisa hi almost powerful — bas Owner-only cheezein (jaise Admin create karna) nahi kar sakta.
+- Reseller create/manage kar sakta hai
+- Sab packages create/manage kar sakta hai
+- Global user/key management
+
+### 3.3 Reseller
+- Apne khud ke credits ke andar rehke keys generate karna
+- Apne assigned packages dekhna aur unke through keys banana
+- Apne banaye hue users (keys) ko manage karna: ban, pause, unban, unpause, delete, HWID reset
+- Agar permission mile to:
+  - Naya Reseller create kar sakta hai (sub-reseller)
+  - API/Bot access use kar sakta hai
+
+---
+
+## 4. Credits System
+
+- Har Reseller ke paas ek **Credit Balance** hota hai.
+- **1 Credit = 1 Key generate karne ka right** (jitni keys utne credits deduct honge).
+- Owner/Admin reseller create karte waqt usse initial credits assign karega.
+- **Reseller ko max ek baar me 10,000 credits** diye ja sakte hain (limit).
+- **Owner apne aap ko ya kisi Reseller ko infinite credits** de sakta hai — ye option sirf Owner ke paas hoga, Reseller ke paas nahi.
+- Reseller apna khud ka credit **kisi aur ko nahi de sakta / khud add nahi kar sakta**.
+
+### Credit Dashboard (Reseller ke Overview tab me dikhna chahiye):
+- Total Credits
+- Used Credits
+- Remaining Credits
+- **Last 10 Keys ka history** (kab bani, kis package ki, kitne din ki)
+
+---
+
+## 5. Key Management
+
+Key generate karte waqt niche diye options honge:
+
+| Field | Description |
+|---|---|
+| Key Name | Custom naam de sakte hain key ko |
+| Expiry (Days) | Kitne din ki key honi chahiye — **max limit: 2012 days** |
+| HWID Lock | Toggle option — ON hone par pehli login ke baad HWID lock ho jayega |
+| HWID Reset Allowed | Agar ye ON hai, to key ke owner (end-user) khud apna HWID reset kar sakta hai (isse ek key multiple devices par use ho sakti hai agar allow kiya gaya ho — is wajah se generally isse *off* rakha jata hai jab tak zaroori na ho) |
+
+> Security Note: HWID reset ka option jitna zyada open rahega, utna zyada chance hoga ki ek hi key multiple logon me share ho. Isliye default OFF rakhna recommended hai; sirf jab support ke liye zaroori ho tabhi manually reset karna better practice hai.
+
+---
+
+## 6. Package Management
+
+- Owner/Admin multiple **Packages** create kar sakte hain (e.g. "Aimkill", "Aimsilent" jaise custom product names — jo bhi aapke software products hain).
+- Har package ke andar hi uska **"Create Key"** button hoga — us package ki key sirf usi package ke section se banegi.
+- Reseller create karte waqt Owner/Admin **select kar sakta hai ki kaunse packages us reseller ko assign karne hain** (checkbox list — jo packages select honge sirf wahi Reseller ke dashboard me dikhenge).
+
+---
+
+## 7. User Management (End-Users / Keys)
+
+Reseller/Admin/Owner apne banaye hue users (license holders) ko manage kar sakein:
+
+| Action | Behavior |
+|---|---|
+| Pause | User ki key temporarily disable ho jaye. Button "Pause" → click karne par "Unpause" me badal jaye (toggle) |
+| Ban | User permanently block ho jaye. Button "Ban" → click karne par "Unban" me badal jaye (toggle) |
+| Delete | User/key permanently remove ho jaye |
+| HWID Reset | Us particular user ka HWID clear kar diya jaye taaki wo naye device/IP se login kar sake |
+
+Ye sab actions **Users tab** ke andar se hi available honge, per-user row me buttons ke through.
+
+---
+
+## 8. Dashboard UI Structure (Sidebar + Tabs)
+
+Sidebar-based layout, left side me menu, right side me content. Design **minimalist** hoga (see Section 1.1) — clean sidebar, simple icons, tables/cards ke saath subtle borders, extra clutter/decoration avoid karna.
+
+### Tab 1 — Overview
+- Credit Balance (Total / Used / Remaining)
+- Last 10 Keys history (name, package, created date, expiry)
+- **App ID & Secret ID** (isko sirf Owner apne Overview tab me khud dekh sakta hai — Admin ya Reseller ke Overview tab me ye dikhega nahi)
+
+### Tab 2 — Packages
+- List of assigned packages (cards/list)
+- Har package card ke andar **"Create Key"** button
+
+### Tab 3 — Users
+- Table of all generated keys/users
+  - Columns: Key/Username, Package, Created Date, Expiry, Status
+  - Actions: Pause/Unpause, Ban/Unban, Delete, Reset HWID
+
+### Tab 4 — API / Bot System
+- Discord Bot source code / setup instructions is tab se milega
+- Agar Reseller ke paas ye access nahi hai to "Upgrade to unlock" type CTA dikhna chahiye
+- Agar access hai to:
+  - API key generate/regenerate karne ka option
+  - Bot setup guide + config file/token input
+  - Bot se end-users seedha Discord se hi key generate kar sakein (jaise web dashboard se karte hain)
+
+### (Owner/Admin Extra)
+- Reseller Search bar (naam se search)
+- "Create Admin" button (Owner only)
+- "Create Reseller" form (with credit assign + package assign + sub-reseller permission + API access toggle + App ID/Secret option)
+- **Owner-Only Visibility:** Owner apna khud ka App ID/Secret dekh sakta hai, aur saath hi **kisi bhi Reseller ya Admin ka App ID/Secret bhi search karke dekh sakta hai** (Reseller list me row expand karke ya reseller profile page par). Ye visibility sirf Owner role ke liye hai — Admin ya Reseller sirf apna khud ka App ID/Secret dekh sakte hain, doosron ka nahi.
+
+---
+
+## 9. Reseller Creation Form (Owner/Admin side)
+
+Jab Owner/Admin ek naya Reseller banata hai, form me ye fields honi chahiye:
+
+1. Username / Password
+2. Initial Credits (max 10,000, Owner ke liye "Infinite" option bhi)
+3. Package Assignment (multi-select checkboxes)
+4. Permission: "Allow this Reseller to create sub-Resellers" (Yes/No toggle)
+5. Permission: "Allow API/Bot Access" (Yes/No toggle)
+6. **App ID & Secret ID Option:**
+   - Reseller create karte waqt ek option hoga: **"Generate New App ID/Secret"** ya **"Keep Existing App ID/Secret"**
+   - Agar **New** select kiya jaye → system automatically fresh App ID + Secret Key generate karega us Reseller ke liye
+   - Agar **Existing** select kiya jaye → jo App ID/Secret already system me set hai (default/shared) wahi is Reseller ko assign ho jayega
+   - Ye App ID + Secret hi Reseller ke API/Bot system me use hote hain (Discord bot ya kisi bhi external integration ko authenticate karne ke liye)
+
+---
+
+## 10. Suggested Database Schema (High Level)
+
+- `users` (owner/admin/reseller — role, username, password_hash, security_pin, 2fa_secret, credits, parent_reseller_id, app_id, secret_key, permissions JSON)
+  - `app_id` / `secret_key`: har account (Owner/Admin/Reseller) ke paas apna ek App ID + Secret hota hai jo API/Bot authentication ke liye use hota hai. Reseller create karte waqt owner/admin decide karta hai ki naya generate karna hai ya default/existing use karna hai. Visibility rule: sirf Owner role hi kisi bhi account ka `app_id`/`secret_key` query kar sakta hai; baaki roles sirf apna khud ka dekh sakte hain (row-level access control zaroori).
+- `packages` (id, name, created_by)
+- `reseller_packages` (reseller_id, package_id) — many-to-many mapping
+- `keys` (id, key_string, key_name, package_id, created_by_reseller_id, expiry_days, hwid, hwid_reset_allowed, status[active/paused/banned], created_at)
+- `credit_logs` (reseller_id, action, amount, timestamp)
+- `api_tokens` (reseller_id, token, bot_access_enabled)
+
+---
+
+## 11. Suggested Tech Stack
+
+- **Backend / Database:** **Supabase** (already set up — project name: **"keyauth"**). Poora backend (Auth, Database, Storage, Realtime) isi Supabase project ke andar hi store/manage hoga.
+  - Supabase Auth ka use Owner/Admin/Reseller login ke liye (custom roles + RLS policies ke saath)
+  - Supabase Postgres Database me saari tables (`users`, `packages`, `reseller_packages`, `keys`, `credit_logs`, `api_tokens` etc.) create hongi — Section 10 ka schema isi Supabase project me implement hoga
+  - **Row Level Security (RLS)** zaroor enable karni hai taaki:
+    - Reseller sirf apna hi data (apni keys, apne users, apna App ID/Secret) access kar sake
+    - Owner hi sabka data (sab reseller/admin ka App ID/Secret) access kar sake
+  - 2FA secret aur App ID/Secret jaisi sensitive fields ke liye extra RLS policy + encryption (agar possible ho) rakhni chahiye
+- **Frontend:** React + Tailwind (sidebar dashboard layout), Supabase JS client (`@supabase/supabase-js`) se connect
+- **Bot:** Discord.js (Node) ya discord.py (Python) — Supabase ke API/REST endpoints (ya Supabase Edge Functions) ke through key generate karega
+
+---
+
+## 12. Landing Page
+
+Panel ke backend/dashboard ke alawa ek **public Landing Page** bhi chahiye (jo login karne se pehle sabko dikhe) — style **terminalx999.com** jaisi (dark, cyberpunk/hacker-themed, "secure kernel/auth system" vibe).
+
+### 12.1 Overall Theme
+- **Minimalist design** (see Section 1.1) — clean background (dark ya light, aapki choice), ek subtle accent color, bohot saara whitespace
+- Simple sans-serif typography, thin-line icons, flat cards with soft/light borders (heavy neon-glow effects nahi — bas ek subtle accent highlight use hoga CTA buttons/links par)
+- Overall feel: professional, clean, "secure tech product" — clutter-free
+
+### 12.2 Top Navbar
+- Left: Site/Brand Logo + Name
+- Right: **Login** button (leads to login page)
+
+### 12.3 Hero Section
+- Small version tag/badge (e.g. "V1.0 STABLE")
+- Bada heading — product ka core value proposition (e.g. hardware-binding, encrypted licensing system)
+- Short subheading/description (1-2 lines)
+- Do CTA buttons: **"Get Started / Register"** aur **"Learn More"** (scrolls to features section)
+- Live-style stat counters neeche: e.g. Active Users/Keys, Uptime %, Avg Response Time (animated count-up effect ke saath)
+
+### 12.4 Features Section
+- Section heading (e.g. "Core Features")
+- Grid of feature cards (3-4 columns) — har card me icon + short title + 1-2 line description
+  - Example features: HWID/Hardware Binding, Encrypted Authentication, Reseller System, Discord Bot Integration, Real-time Dashboard, 2FA Security
+
+### 12.5 "How It Works" Section
+- Section heading
+- 3 steps numbered format:
+  1. Account/Key Generation
+  2. Secure Authentication Handshake
+  3. Instant Authorization/Access
+
+### 12.6 Footer
+- Brand name + short tagline
+- Contact link (e.g. WhatsApp/Telegram/Discord support link)
+- Column links: Platform (Dashboard, API, Bot), Resources (Docs, Status), Company (Terms, Privacy, Contact)
+
+### 12.7 Tech Notes
+- Landing page static/marketing hoga — koi sensitive data yahan render nahi hoga
+- "Login" aur "Register/Get Started" buttons Owner/Admin/Reseller login page ki taraf redirect karenge
+- Isi landing page ko React + Tailwind me banaya ja sakta hai (dashboard jaisa hi stack), lekin ye publicly accessible route hoga (no auth required)
+
+---
+
+## 13. Important Notes
+
+- Backend Supabase project **"keyauth"** me already login/setup ho chuka hai — naya backend project bana ke duplicate setup nahi karna, sab kuch isi existing Supabase project ke andar build karna hai.
+- Har role ka access strictly server-side enforce hona chahiye (sirf UI se hide karna kaafi nahi — Supabase RLS policies + API level par bhi permission check zaroori hai).
+- Credit deduction aur key creation **atomic transaction** me honi chahiye taaki race condition me double-spending na ho (Supabase Postgres functions/RPC ka use kiya ja sakta hai iske liye).
+- Sensitive actions (Admin create, infinite credits assign, ban/unban) ke liye **audit log** rakhna recommended hai.
+
+---
+
+*Is spec ko copy karke aap seedha kisi bhi AI coding assistant (Claude Code, etc.) ko de sakte hain project build karne ke liye.*
